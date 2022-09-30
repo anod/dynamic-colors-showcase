@@ -9,46 +9,24 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import java.util.*
-
-data class ScreenState(
-    val darkTheme: Boolean
-)
-
-sealed interface ScreenEvent {
-    class SwitchTheme(val darkTheme: Boolean) : ScreenEvent
-}
-
-class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            val darkTheme = isSystemInDarkTheme()
-            var screenState by remember {
-                mutableStateOf(ScreenState(
-                    darkTheme = darkTheme
-                ))
-            }
-            Screen(screenState, onEvent = { event ->
-                when (event) {
-                    is ScreenEvent.SwitchTheme -> {
-                        screenState = screenState.copy(darkTheme = event.darkTheme)
-                    }
-                }
-            })
-        }
-    }
-}
+import com.google.android.material.color.MaterialColors
 
 data class ColorDesc(
     val title: String,
@@ -56,32 +34,141 @@ data class ColorDesc(
     val contentColor: Color
 )
 
+data class ScreenState(
+    val darkTheme: Boolean,
+    val selectedColor: ColorDesc? = null
+)
+
+sealed interface ScreenEvent {
+    object Back : ScreenEvent
+    class SwitchTheme(val darkTheme: Boolean) : ScreenEvent
+    class SelectColor(val colorDesc: ColorDesc?) : ScreenEvent
+}
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        setContent {
+            val darkTheme = isSystemInDarkTheme()
+            var screenState by remember {
+                mutableStateOf(ScreenState(
+                    darkTheme = darkTheme
+                ))
+            }
+            DynamicColorsShowcaseTheme(darkTheme = screenState.darkTheme) {
+                if (screenState.selectedColor == null) {
+                    ListScreen(screenState, onEvent = { event -> onEvent(event, screenState) { newState -> screenState = newState } })
+                } else {
+                    SelectedColorScreen(screenState, onEvent = { event -> onEvent(event, screenState) { newState -> screenState = newState } })
+                }
+            }
+        }
+    }
+
+    private fun onEvent(event: ScreenEvent, screenState: ScreenState, onNewState: (ScreenState) -> Unit) {
+        when (event) {
+            is ScreenEvent.SwitchTheme -> onNewState(screenState.copy(darkTheme = event.darkTheme))
+            is ScreenEvent.SelectColor -> onNewState(screenState.copy(selectedColor = event.colorDesc))
+            ScreenEvent.Back -> {
+                if (screenState.selectedColor != null) {
+                    onNewState(screenState.copy(selectedColor = null))
+                } else {
+                    onBackPressedDispatcher.onBackPressed()
+                }
+            }
+        }
+    }
+
+}
+
 @Composable
-fun Screen(screenState: ScreenState, onEvent: (ScreenEvent) -> Unit) {
-    DynamicColorsShowcaseTheme(darkTheme = screenState.darkTheme) {
-        // A surface container using the 'background' color from the theme
-        Surface(modifier = Modifier.fillMaxSize(), color = if (screenState.darkTheme) Color.Black else Color.White) {
-            ColorDescriptions { colors ->
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(count = 2),
-                    modifier = Modifier
-                        .fillMaxSize()
+fun ListScreen(screenState: ScreenState, onEvent: (ScreenEvent) -> Unit) {
+    // A surface container using the 'background' color from the theme
+    Surface(modifier = Modifier.fillMaxSize(), color = if (screenState.darkTheme) Color.Black else Color.White) {
+        ColorDescriptions { colors ->
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(count = 2),
+                modifier = Modifier
+                    .fillMaxSize()
+            ) {
+                item(
+                    key = "top",
+                    span = { GridItemSpan(maxLineSpan) }
                 ) {
-                    item(
-                        key = "top",
-                        span = { GridItemSpan(maxLineSpan) }
-                    ) {
-                        TopRow(darkTheme = screenState.darkTheme, onEvent = onEvent)
-                    }
-                    items(colors.size, key = { it }) { index ->
-                        val item = colors[index]
-                        ColorItem(title = item.title, value = item.value, contentColor = item.contentColor)
-                    }
+                    TopRow(darkTheme = screenState.darkTheme, onEvent = onEvent)
+                }
+                items(colors.size, key = { it }) { index ->
+                    ColorItem(
+                        colorDesc = colors[index],
+                        onClick = { colorDesc -> onEvent(ScreenEvent.SelectColor(colorDesc)) },
+                        modifier = Modifier
+                            .padding(all = 4.dp)
+                            .fillMaxWidth()
+                    )
                 }
             }
         }
     }
 }
+
+@Composable
+private fun SelectedColorScreen(screenState: ScreenState, onEvent: (ScreenEvent) -> Unit) {
+    val selectedColor = screenState.selectedColor ?: return
+    val roles = remember(screenState) {
+        MaterialColors.getColorRoles(selectedColor.value.toArgb(), screenState.darkTheme).let { roles ->
+            listOf(
+                ColorDesc(title = "accent role", value = Color(roles.accent), contentColor = Color(roles.onAccent) ),
+                ColorDesc(title = "onAccent role", value = Color(roles.onAccent), contentColor = Color(roles.accent) ),
+                ColorDesc(title = "accentContainer role", value = Color(roles.accentContainer), contentColor = Color(roles.onAccentContainer) ),
+                ColorDesc(title = "onAccentContainer role", value = Color(roles.onAccentContainer), contentColor = Color(roles.accentContainer) ),
+            )
+        }
+    }
+
+    Surface(modifier = Modifier.fillMaxSize(), color = if (screenState.darkTheme) Color.Black else Color.White) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            TopRow(darkTheme = screenState.darkTheme, onEvent = onEvent, showBack = true)
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(count = 2),
+                modifier = Modifier
+                    .fillMaxSize()
+            ) {
+                item(
+                    key = "title",
+                    span = { GridItemSpan(maxLineSpan) }
+                ) {
+                    Text(text = selectedColor.title, style = MaterialTheme.typography.headlineLarge, textAlign = TextAlign.Center)
+                }
+                item(
+                    key = "selected",
+                    span = { GridItemSpan(maxLineSpan) }
+                ) {
+                    ColorItem(
+                        colorDesc = selectedColor,
+                        onClick = { },
+                        modifier = Modifier
+                            .padding(all = 4.dp)
+                            .defaultMinSize(minWidth = 128.dp)
+                    )
+                }
+                items(roles.size, key = { it }) { index ->
+                    ColorItem(
+                        colorDesc = roles[index],
+                        onClick = { colorDesc -> onEvent(ScreenEvent.SelectColor(colorDesc)) },
+                        modifier = Modifier
+                            .padding(all = 4.dp)
+                            .fillMaxWidth()
+                    )
+                }
+            }
+        }
+    }
+}
+
 
 @Composable
 fun ColorDescriptions(content: @Composable (List<ColorDesc>) -> Unit) {
@@ -125,57 +212,93 @@ fun ColorDescriptions(content: @Composable (List<ColorDesc>) -> Unit) {
     content(colors)
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ColorItem(title: String, value: Color, contentColor: Color) {
+private fun ColorItem(colorDesc: ColorDesc, onClick: (ColorDesc) -> Unit, modifier: Modifier = Modifier) {
     val shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 16.dp, bottomEnd = 16.dp)
+    val hexCode = "#" + colorDesc.value.toColorHex()
+    val clipboard = LocalClipboardManager.current
+
     Surface(
-        modifier = Modifier
-            .padding(all = 4.dp)
-            .fillMaxWidth()
-            .height(64.dp),
-        color = value,
-        contentColor = contentColor,
+        modifier = modifier
+            .height(64.dp)
+            .combinedClickable(
+                enabled = true,
+                onClickLabel = "${colorDesc.title} details",
+                role = null,
+                onLongClickLabel = "copy $hexCode",
+                onLongClick = { clipboard.setText(AnnotatedString(hexCode)) },
+                onDoubleClick = null,
+                onClick = { onClick(colorDesc) }
+            )
+        ,
+        color = colorDesc.value,
+        contentColor = colorDesc.contentColor,
         shape = shape,
-        border = BorderStroke(width = 1.dp, color = contentColor)
+        border = BorderStroke(width = 1.dp, color = colorDesc.contentColor)
     ) {
         Column(modifier = Modifier.padding(start = 16.dp, top = 8.dp)) {
-            Text(text = title, style = MaterialTheme.typography.labelMedium)
-            Text(text = "#" + value.toColorHex(), style = MaterialTheme.typography.labelLarge)
+            Text(text = colorDesc.title, style = MaterialTheme.typography.labelMedium)
+            Text(text = hexCode, style = MaterialTheme.typography.labelLarge)
         }
     }
 }
 
-fun Color.toColorHex(withAlpha: Boolean = true): String {
-    var hexStr = "%08X".format(Locale.ROOT, (value shr 32).toLong())
-    if (!withAlpha) {
-        hexStr = hexStr.substring(2)
-    }
-    return hexStr
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TopRow(darkTheme: Boolean, onEvent: (ScreenEvent) -> Unit, modifier: Modifier = Modifier) {
-    Row(
+fun TopRow(darkTheme: Boolean, onEvent: (ScreenEvent) -> Unit, modifier: Modifier = Modifier, showBack: Boolean = false) {
+    TopAppBar(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center
-    ) {
-        ElevatedAssistChip(
-            onClick = { onEvent(ScreenEvent.SwitchTheme(darkTheme = false)) },
-            label = { Text(text = "Light theme") },
-            enabled = darkTheme
-        )
-        ElevatedAssistChip(
-            modifier = Modifier.padding(start = 16.dp),
-            onClick = { onEvent(ScreenEvent.SwitchTheme(darkTheme = true)) },
-            label = { Text(text = "Dark theme") },
-            enabled = !darkTheme
-        )
+        navigationIcon = {
+             if (showBack) {
+                 IconButton(onClick = { onEvent(ScreenEvent.Back) }) {
+                     Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back")
+                 }
+             }
+        },
+        actions = {
+            if (showBack) {
+                IconButton(onClick = { }) {
+                }
+            }
+        },
+        title = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                ElevatedAssistChip(
+                    onClick = { onEvent(ScreenEvent.SwitchTheme(darkTheme = false)) },
+                    label = { Text(text = "Light theme") },
+                    enabled = darkTheme
+                )
+                ElevatedAssistChip(
+                    modifier = Modifier.padding(start = 16.dp),
+                    onClick = { onEvent(ScreenEvent.SwitchTheme(darkTheme = true)) },
+                    label = { Text(text = "Dark theme") },
+                    enabled = !darkTheme
+                )
+            }
+        }
+    )
+
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun ListPreview() {
+    DynamicColorsShowcaseTheme {
+        ListScreen(screenState = ScreenState(darkTheme = false), onEvent = { })
     }
 }
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
-fun DefaultPreview() {
-    Screen(screenState = ScreenState(darkTheme = false), onEvent = { })
+fun DetailsPreview() {
+    DynamicColorsShowcaseTheme {
+        SelectedColorScreen(screenState = ScreenState(
+            darkTheme = false,
+            selectedColor = ColorDesc(title = "primary", value = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
+        ), onEvent = { })
+    }
 }
