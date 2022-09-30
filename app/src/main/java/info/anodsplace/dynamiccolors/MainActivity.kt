@@ -118,10 +118,10 @@ private fun SelectedColorScreen(screenState: ScreenState, onEvent: (ScreenEvent)
     val roles = remember(screenState) {
         MaterialColors.getColorRoles(selectedColor.value.toArgb(), screenState.darkTheme).let { roles ->
             listOf(
-                ColorDesc(title = "accent role", value = Color(roles.accent), contentColor = Color(roles.onAccent) ),
-                ColorDesc(title = "onAccent role", value = Color(roles.onAccent), contentColor = Color(roles.accent) ),
-                ColorDesc(title = "accentContainer role", value = Color(roles.accentContainer), contentColor = Color(roles.onAccentContainer) ),
-                ColorDesc(title = "onAccentContainer role", value = Color(roles.onAccentContainer), contentColor = Color(roles.accentContainer) ),
+                ColorDesc(title = "accent", value = Color(roles.accent), contentColor = Color(roles.onAccent) ),
+                ColorDesc(title = "onAccent", value = Color(roles.onAccent), contentColor = Color(roles.accent) ),
+                ColorDesc(title = "accentContainer", value = Color(roles.accentContainer), contentColor = Color(roles.onAccentContainer) ),
+                ColorDesc(title = "onAccentContainer", value = Color(roles.onAccentContainer), contentColor = Color(roles.accentContainer) ),
             )
         }
     }
@@ -158,6 +158,12 @@ private fun SelectedColorScreen(screenState: ScreenState, onEvent: (ScreenEvent)
                             .padding(all = 4.dp)
                             .defaultMinSize(minWidth = 128.dp)
                     )
+                }
+                item(
+                    key = "roles",
+                    span = { GridItemSpan(maxLineSpan) }
+                ) {
+                    Text(text = "Roles", style = MaterialTheme.typography.headlineLarge, textAlign = TextAlign.Center)
                 }
                 items(roles.size, key = { it }) { index ->
                     ColorItem(
