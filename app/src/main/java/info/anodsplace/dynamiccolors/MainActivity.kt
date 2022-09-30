@@ -126,7 +126,11 @@ private fun SelectedColorScreen(screenState: ScreenState, onEvent: (ScreenEvent)
         }
     }
 
-    Surface(modifier = Modifier.fillMaxSize(), color = if (screenState.darkTheme) Color.Black else Color.White) {
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = if (screenState.darkTheme) Color.Black else Color.White,
+        contentColor = if (screenState.darkTheme) Color.White else Color.Black,
+    ) {
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
