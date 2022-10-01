@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
@@ -21,16 +20,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.ClipboardManager
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.glance.appwidget.state.updateAppWidgetState
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.google.android.material.color.MaterialColors
+import info.anodsplace.dynamiccolors.appwidget.ColorsAppWidget
+import kotlinx.coroutines.launch
+import java.util.Date
 
 data class ColorDesc(
     val title: String,
@@ -61,15 +68,28 @@ class MainActivity : ComponentActivity() {
                     darkTheme = darkTheme
                 ))
             }
-            DynamicColorsShowcaseTheme(darkTheme = screenState.darkTheme) {
+            AppTheme(darkTheme = screenState.darkTheme) {
                 NavHost(navController = navController, startDestination = "list") {
                     composable("list") {
                         ListScreen(screenState, onEvent = { event -> onEvent(event, screenState, navController) { newState -> screenState = newState } })
                     }
                     composable("details") {
+                        it.arguments
                         SelectedColorScreen(screenState, onEvent = { event -> onEvent(event, screenState, navController) { newState -> screenState = newState } })
                     }
                 }
+            }
+        }
+
+        lifecycleScope.launch {
+            val manager = GlanceAppWidgetManager(applicationContext)
+            val glanceIds = manager.getGlanceIds(ColorsAppWidget::class.java)
+            glanceIds.forEach { glanceId ->
+                updateAppWidgetState(
+                    context = applicationContext,
+                    glanceId = glanceId,
+                    updateState = { prefs -> prefs[longPreferencesKey("updateTime")] = System.currentTimeMillis() }
+                )
             }
         }
     }
@@ -97,7 +117,8 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun ListScreen(screenState: ScreenState, onEvent: (ScreenEvent) -> Unit) {
-    // A surface container using the 'background' color from the theme
+    val clipboard = LocalClipboardManager.current
+
     Surface(modifier = Modifier.fillMaxSize(), color = if (screenState.darkTheme) Color.Black else Color.White) {
         ColorDescriptions { colors ->
             LazyVerticalGrid(
@@ -115,6 +136,7 @@ fun ListScreen(screenState: ScreenState, onEvent: (ScreenEvent) -> Unit) {
                     ColorItem(
                         colorDesc = colors[index],
                         onClick = { colorDesc -> onEvent(ScreenEvent.SelectColor(colorDesc)) },
+                        onLongClick = { colorDesc -> copyColorDesc(colorDesc, clipboard) },
                         modifier = Modifier
                             .padding(all = 4.dp)
                             .fillMaxWidth()
@@ -123,6 +145,11 @@ fun ListScreen(screenState: ScreenState, onEvent: (ScreenEvent) -> Unit) {
             }
         }
     }
+}
+
+private fun copyColorDesc(colorDesc: ColorDesc, clipboard: ClipboardManager) {
+    val hexCode = "#" + colorDesc.value.toColorHex()
+    clipboard.setText(AnnotatedString(hexCode))
 }
 
 @Composable
@@ -139,6 +166,7 @@ private fun SelectedColorScreen(screenState: ScreenState, onEvent: (ScreenEvent)
         }
     }
 
+    val clipboard = LocalClipboardManager.current
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = if (screenState.darkTheme) Color.Black else Color.White,
@@ -167,6 +195,7 @@ private fun SelectedColorScreen(screenState: ScreenState, onEvent: (ScreenEvent)
                     ColorItem(
                         colorDesc = selectedColor,
                         onClick = { },
+                        onLongClick = { colorDesc -> copyColorDesc(colorDesc, clipboard) },
                         modifier = Modifier
                             .padding(all = 4.dp)
                             .defaultMinSize(minWidth = 128.dp)
@@ -182,87 +211,13 @@ private fun SelectedColorScreen(screenState: ScreenState, onEvent: (ScreenEvent)
                     ColorItem(
                         colorDesc = roles[index],
                         onClick = { colorDesc -> onEvent(ScreenEvent.SelectColor(colorDesc)) },
+                        onLongClick = { colorDesc -> copyColorDesc(colorDesc, clipboard) },
                         modifier = Modifier
                             .padding(all = 4.dp)
                             .fillMaxWidth()
                     )
                 }
             }
-        }
-    }
-}
-
-
-@Composable
-fun ColorDescriptions(content: @Composable (List<ColorDesc>) -> Unit) {
-    val colors = listOf(
-        ColorDesc(title = "primary", value = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary),
-        ColorDesc(title = "onPrimary", value = MaterialTheme.colorScheme.onPrimary, contentColor = MaterialTheme.colorScheme.primary),
-        ColorDesc(title = "primaryContainer", value = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer),
-        ColorDesc(title = "onPrimaryContainer", value = MaterialTheme.colorScheme.onPrimaryContainer, contentColor = MaterialTheme.colorScheme.primaryContainer),
-
-        ColorDesc(title = "inversePrimary", value = MaterialTheme.colorScheme.inversePrimary, contentColor = MaterialTheme.colorScheme.primary),
-        ColorDesc(title = "outline", value = MaterialTheme.colorScheme.outline, contentColor = MaterialTheme.colorScheme.primary),
-
-        ColorDesc(title = "secondary", value = MaterialTheme.colorScheme.secondary, contentColor = MaterialTheme.colorScheme.onSecondary),
-        ColorDesc(title = "onSecondary", value = MaterialTheme.colorScheme.onSecondary, contentColor = MaterialTheme.colorScheme.secondary),
-        ColorDesc(title = "secondaryContainer", value = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer),
-        ColorDesc(title = "onSecondaryContainer", value = MaterialTheme.colorScheme.onSecondaryContainer, contentColor = MaterialTheme.colorScheme.secondaryContainer),
-
-        ColorDesc(title = "tertiary", value = MaterialTheme.colorScheme.tertiary, contentColor = MaterialTheme.colorScheme.onTertiary),
-        ColorDesc(title = "onTertiary", value = MaterialTheme.colorScheme.onTertiary, contentColor = MaterialTheme.colorScheme.tertiary),
-        ColorDesc(title = "tertiaryContainer", value = MaterialTheme.colorScheme.tertiaryContainer, contentColor = MaterialTheme.colorScheme.onTertiaryContainer),
-        ColorDesc(title = "onTertiaryContainer", value = MaterialTheme.colorScheme.onTertiaryContainer, contentColor = MaterialTheme.colorScheme.tertiaryContainer),
-
-        ColorDesc(title = "background", value = MaterialTheme.colorScheme.background, contentColor = MaterialTheme.colorScheme.onBackground),
-        ColorDesc(title = "onBackground", value = MaterialTheme.colorScheme.onBackground, contentColor = MaterialTheme.colorScheme.background),
-
-        ColorDesc(title = "surface", value = MaterialTheme.colorScheme.surface, contentColor = MaterialTheme.colorScheme.onSurface),
-        ColorDesc(title = "onSurface", value = MaterialTheme.colorScheme.onSurface, contentColor = MaterialTheme.colorScheme.surface),
-
-        ColorDesc(title = "surfaceVariant", value = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
-        ColorDesc(title = "onSurfaceVariant", value = MaterialTheme.colorScheme.onSurfaceVariant, contentColor = MaterialTheme.colorScheme.surfaceVariant),
-
-        ColorDesc(title = "inverseSurface", value = MaterialTheme.colorScheme.inverseSurface, contentColor = MaterialTheme.colorScheme.inverseOnSurface),
-        ColorDesc(title = "inverseOnSurface", value = MaterialTheme.colorScheme.inverseOnSurface, contentColor = MaterialTheme.colorScheme.inverseSurface),
-
-        ColorDesc(title = "error", value = MaterialTheme.colorScheme.error, contentColor = MaterialTheme.colorScheme.onError),
-        ColorDesc(title = "onError", value = MaterialTheme.colorScheme.onError, contentColor = MaterialTheme.colorScheme.error),
-
-        ColorDesc(title = "errorContainer", value = MaterialTheme.colorScheme.errorContainer, contentColor = MaterialTheme.colorScheme.onErrorContainer),
-        ColorDesc(title = "onErrorContainer", value = MaterialTheme.colorScheme.onErrorContainer, contentColor = MaterialTheme.colorScheme.errorContainer),
-    )
-    content(colors)
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun ColorItem(colorDesc: ColorDesc, onClick: (ColorDesc) -> Unit, modifier: Modifier = Modifier) {
-    val shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 16.dp, bottomEnd = 16.dp)
-    val hexCode = "#" + colorDesc.value.toColorHex()
-    val clipboard = LocalClipboardManager.current
-
-    Surface(
-        modifier = modifier
-            .height(64.dp)
-            .combinedClickable(
-                enabled = true,
-                onClickLabel = "${colorDesc.title} details",
-                role = null,
-                onLongClickLabel = "copy $hexCode",
-                onLongClick = { clipboard.setText(AnnotatedString(hexCode)) },
-                onDoubleClick = null,
-                onClick = { onClick(colorDesc) }
-            )
-        ,
-        color = colorDesc.value,
-        contentColor = colorDesc.contentColor,
-        shape = shape,
-        border = BorderStroke(width = 1.dp, color = colorDesc.contentColor)
-    ) {
-        Column(modifier = Modifier.padding(start = 16.dp, top = 8.dp)) {
-            Text(text = colorDesc.title, style = MaterialTheme.typography.labelMedium)
-            Text(text = hexCode, style = MaterialTheme.typography.labelLarge)
         }
     }
 }
@@ -310,7 +265,7 @@ fun TopRow(darkTheme: Boolean, onEvent: (ScreenEvent) -> Unit, modifier: Modifie
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun ListPreview() {
-    DynamicColorsShowcaseTheme {
+    AppTheme {
         ListScreen(screenState = ScreenState(darkTheme = false), onEvent = { })
     }
 }
@@ -318,7 +273,7 @@ fun ListPreview() {
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun DetailsPreview() {
-    DynamicColorsShowcaseTheme {
+    AppTheme {
         SelectedColorScreen(screenState = ScreenState(
             darkTheme = false,
             selectedColor = ColorDesc(title = "primary", value = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)

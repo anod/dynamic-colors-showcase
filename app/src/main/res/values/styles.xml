@@ -1,14 +1,8 @@
 <resources>
 
-    <style name="Widget.DynamicColorsShowcase.AppWidget.Container" parent="android:Widget">
-        <item name="android:id">@android:id/background</item>
-        <item name="android:padding">?attr/appWidgetPadding</item>
-        <item name="android:background">@drawable/app_widget_background</item>
+    <style name="AppWidget.AppWidgetContainer" parent="Theme.AppWidget.AppWidgetContainerParent">
+        <!-- Apply padding to avoid the content of the widget colliding with the rounded corners -->
+        <item name="appWidgetPadding">?attr/appWidgetPadding</item>
     </style>
 
-    <style name="Widget.DynamicColorsShowcase.AppWidget.InnerView" parent="android:Widget">
-        <item name="android:padding">?attr/appWidgetPadding</item>
-        <item name="android:background">@drawable/app_widget_inner_view_background</item>
-        <item name="android:textColor">?android:attr/textColorPrimary</item>
-    </style>
 </resources>

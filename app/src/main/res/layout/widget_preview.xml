@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/AppWidget.AppWidgetContainer"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:theme="@style/AppWidget.AppWidgetContainer"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:background="#FF1E6391"
+        android:orientation="vertical">
+
+        <TextView
+            android:paddingTop="8dp"
+            android:paddingStart="16dp"
+            android:paddingEnd="2dp"
+            android:textSize="12sp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="start"
+            android:textColor="#FFFFFFFF"
+            android:text="Primary" />
+
+        <TextView
+            android:paddingTop="8dp"
+            android:paddingStart="16dp"
+            android:paddingEnd="2dp"
+            android:textSize="12sp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="start"
+            android:textColor="#FFFFFFFF"
+            android:text="#FF1E6391" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_marginTop="4dp"
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:background="#FFFFFFFF"
+        android:orientation="vertical">
+
+        <TextView
+            android:paddingStart="16dp"
+            android:paddingEnd="2dp"
+            android:textSize="12sp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="start"
+            android:textColor="#FF1E6391"
+            android:text="onPrimary" />
+
+        <TextView
+            android:paddingTop="4dp"
+            android:paddingStart="16dp"
+            android:paddingEnd="2dp"
+            android:textSize="12sp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="start"
+            android:textColor="#FF1E6391"
+            android:text="#FFFFFFFF" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_marginTop="4dp"
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:background="#FFCBE5FF"
+        android:orientation="vertical">
+
+        <TextView
+            android:paddingStart="16dp"
+            android:paddingEnd="2dp"
+            android:textSize="12sp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="start"
+            android:textColor="#FF001D32"
+            android:text="primaryContainer" />
+
+        <TextView
+            android:paddingTop="4dp"
+            android:paddingStart="16dp"
+            android:paddingEnd="2dp"
+            android:textSize="12sp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="start"
+            android:textColor="#FF001D32"
+            android:text="#FFCBE5FF" />
+    </LinearLayout>
+</LinearLayout>
