@@ -103,26 +103,31 @@ private fun RegularWidget(colors: List<ColorDesc>) {
 fun ColorItem(colorDesc: ColorDesc, modifier: GlanceModifier) {
     val hexCode = "#" + colorDesc.value.toColorHex()
     val context = LocalContext.current
-    Box(
-        modifier = modifier
-            .height(64.dp)
-            .appWidgetInnerCornerRadius()
-            .background(color = colorDesc.value)
-            .clickable(onClick = actionStartActivity(
-                componentName = ComponentName(context, MainActivity::class.java)
-            ))
-    ) {
-        Column(modifier = GlanceModifier.padding(start = 16.dp, top = 4.dp)) {
-            Text(text = colorDesc.title, style = TextStyle(
-                color = ColorProvider(colorDesc.contentColor),
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Normal
-            ))
-            Text(text = hexCode, style = TextStyle(
-                color = ColorProvider(colorDesc.contentColor),
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Normal
-            ))
+    Column {
+        Box(
+            modifier = modifier
+                .height(64.dp)
+                .appWidgetInnerCornerRadius()
+                .background(color = colorDesc.value)
+                .clickable(onClick = actionStartActivity(
+                    componentName = ComponentName(context, MainActivity::class.java)
+                ))
+        ) {
+            Column(modifier = GlanceModifier.padding(start = 16.dp, top = 4.dp)) {
+                Text(text = colorDesc.title, style = TextStyle(
+                    color = ColorProvider(colorDesc.contentColor),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Normal
+                ))
+                Text(text = hexCode, style = TextStyle(
+                    color = ColorProvider(colorDesc.contentColor),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Normal
+                ))
+            }
         }
+
+        Spacer(GlanceModifier.size(4.dp))
     }
+
 }
