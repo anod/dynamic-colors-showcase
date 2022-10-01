@@ -26,6 +26,10 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.google.android.material.color.MaterialColors
 
 data class ColorDesc(
@@ -51,35 +55,44 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val darkTheme = isSystemInDarkTheme()
+            val navController = rememberNavController()
             var screenState by remember {
                 mutableStateOf(ScreenState(
                     darkTheme = darkTheme
                 ))
             }
             DynamicColorsShowcaseTheme(darkTheme = screenState.darkTheme) {
-                if (screenState.selectedColor == null) {
-                    ListScreen(screenState, onEvent = { event -> onEvent(event, screenState) { newState -> screenState = newState } })
-                } else {
-                    SelectedColorScreen(screenState, onEvent = { event -> onEvent(event, screenState) { newState -> screenState = newState } })
+                NavHost(navController = navController, startDestination = "list") {
+                    composable("list") {
+                        ListScreen(screenState, onEvent = { event -> onEvent(event, screenState, navController) { newState -> screenState = newState } })
+                    }
+                    composable("details") {
+                        SelectedColorScreen(screenState, onEvent = { event -> onEvent(event, screenState, navController) { newState -> screenState = newState } })
+                    }
                 }
             }
         }
     }
 
-    private fun onEvent(event: ScreenEvent, screenState: ScreenState, onNewState: (ScreenState) -> Unit) {
+    private fun onEvent(
+        event: ScreenEvent,
+        screenState: ScreenState,
+        navController: NavHostController,
+        onNewState: (ScreenState) -> Unit
+    ) {
         when (event) {
             is ScreenEvent.SwitchTheme -> onNewState(screenState.copy(darkTheme = event.darkTheme))
-            is ScreenEvent.SelectColor -> onNewState(screenState.copy(selectedColor = event.colorDesc))
-            ScreenEvent.Back -> {
-                if (screenState.selectedColor != null) {
-                    onNewState(screenState.copy(selectedColor = null))
-                } else {
-                    onBackPressedDispatcher.onBackPressed()
+            is ScreenEvent.SelectColor -> {
+                onNewState(screenState.copy(selectedColor = event.colorDesc))
+                navController.navigate("details") {
+                    popUpTo("list")
                 }
+            }
+            ScreenEvent.Back -> {
+                navController.popBackStack()
             }
         }
     }
-
 }
 
 @Composable
