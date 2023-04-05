@@ -14,12 +14,12 @@ dependencyResolutionManagement {
 
     versionCatalogs {
         libs {
-            version("compose", "1.2.1")
-            library("compose-ui", "androidx.compose.ui", "ui").versionRef("compose")
-            library("compose-ui-tooling-preview", "androidx.compose.ui", "ui-tooling-preview").versionRef("compose")
-            library("compose-ui-tooling", "androidx.compose.ui", "ui-tooling").versionRef("compose")
-            library("compose-ui-test-manifest", "androidx.compose.ui", "ui-test-manifest").versionRef("compose")
-            library("test-compose-ui-junit4", "androidx.compose.ui", "ui-test-junit4").versionRef("compose")
+            library("compose-bom", "androidx.compose", "compose-bom").version("2023.03.00")
+            library("compose-ui", "androidx.compose.ui", "ui").withoutVersion()
+            library("compose-ui-tooling-preview", "androidx.compose.ui", "ui-tooling-preview").withoutVersion()
+            library("compose-ui-tooling", "androidx.compose.ui", "ui-tooling").withoutVersion()
+            library("compose-ui-test-manifest", "androidx.compose.ui", "ui-test-manifest").withoutVersion()
+            library("test-compose-ui-junit4", "androidx.compose.ui", "ui-test-junit4").withoutVersion()
 
             library("compose-activity","androidx.activity:activity-compose:1.6.0")
             library("compose-material3","androidx.compose.material3:material3:1.0.0-beta03")
